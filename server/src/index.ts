@@ -65,6 +65,9 @@ app.post('/webhook', express.json(), express.urlencoded({ extended: true }), asy
         console.log('Event received:', JSON.stringify(event, null, 2));
         if (event.type === 'message') {
           await commandHandler.handleMessage(event);
+        } else if (event.type === 'join') {
+          // グループに追加された時のウェルカムメッセージ
+          await commandHandler.handleJoin(event);
         }
       } catch (error) {
         console.error('Error handling event:', error);

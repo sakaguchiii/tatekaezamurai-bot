@@ -348,6 +348,44 @@ export class CommandHandler {
       messages: [{ type: 'text', text: message }],
     });
   }
+
+  // グループ参加時のウェルカムメッセージ
+  async handleJoin(event: line.WebhookEvent): Promise<void> {
+    if (event.type !== 'join') return;
+
+    const replyToken = event.replyToken;
+
+    const welcomeMessage = `私はグループチャット専用の精算くんです⚡️
+
+※個人では使えません！
+
+🔥使い方
+
+☑︎記録開始：「開始」「はじめ」
+
+☑︎途中経過：「状況」「確認」
+
+☑︎精算：「精算」「せいさん」
+
+☑︎終了：「終了」
+
+⚠️書き方のルール
+
+・〇〇 xxxx円 の形式
+
+・金額は半角数字
+
+・円は省略可能
+
+👾「キャンセル」で最後の記録を削除できます`;
+
+    await client.replyMessage({
+      replyToken,
+      messages: [{ type: 'text', text: welcomeMessage }],
+    });
+
+    console.log('✅ Welcome message sent to group');
+  }
 }
 
 export const commandHandler = new CommandHandler();
