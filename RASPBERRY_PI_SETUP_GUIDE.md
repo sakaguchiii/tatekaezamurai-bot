@@ -112,8 +112,8 @@ npm --version    # 9.x.x 以上
 
 ```bash
 # Gitユーザー情報設定
-git config --global user.name "sakaguchiiii"
-git config --global user.email "your-email@example.com"
+git config --global user.name "sakaguchiii"
+git config --global user.email "tsubasa.811.ss@gmail.com"
 
 # 確認
 git config --list
@@ -130,7 +130,7 @@ git config --list
 cd ~
 
 # リポジトリをクローン
-git clone https://github.com/sakaguchiiii/tatekaezamurai-bot.git
+git clone https://github.com/sakaguchiii/tatekaezamurai-bot.git
 
 # プロジェクトディレクトリに移動
 cd tatekaezamurai-bot/server

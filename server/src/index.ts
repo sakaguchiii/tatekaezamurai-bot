@@ -25,6 +25,11 @@ validateEnv();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ★ LINE SDK クライアントの初期化 (ここが重要)
+const client = new line.messagingApi.MessagingApiClient({
+  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || '',
+});
+
 // LINE Webhook設定
 const lineConfig: line.MiddlewareConfig = {
   channelSecret: process.env.LINE_CHANNEL_SECRET || '',
@@ -85,14 +90,14 @@ app.get('/health', (req, res) => {
 
 // ルートエンドポイント
 app.get('/', (req, res) => {
-  res.send('たてかえ侍 LINEボット サーバー稼働中');
+  res.send('清算くんLINEボット サーバー稼働中');
 });
 
 // サーバー起動
 app.listen(PORT, () => {
   console.log('\n');
   console.log('========================================');
-  console.log('🍻 たてかえ侍 LINEボット サーバー起動');
+  console.log('🍻 清算くん LINEボット サーバー起動');
   console.log('========================================');
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📍 Webhook URL: http://localhost:${PORT}/webhook`);

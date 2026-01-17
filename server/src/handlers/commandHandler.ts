@@ -4,6 +4,10 @@ import { CommandParser } from '../utils/parser';
 import { Calculator } from '../utils/calculator';
 import { MessageFormatter } from '../utils/formatter';
 import { Session } from '../types';
+import * as dotenv from 'dotenv';
+
+// 環境変数を確実に読み込む
+dotenv.config();
 
 const client = new line.messagingApi.MessagingApiClient({
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || '',
