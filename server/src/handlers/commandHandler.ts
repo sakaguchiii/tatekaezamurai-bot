@@ -29,7 +29,7 @@ export class CommandHandler {
           replyToken,
           messages: [{
             type: 'text',
-            text: 'このボットはグループチャット専用です',
+            text: '⚠️ グループ専用です',
           }],
         });
       }
@@ -68,7 +68,7 @@ export class CommandHandler {
           replyToken,
           messages: [{
             type: 'text',
-            text: 'エラーが発生しました。もう一度お試しください。',
+            text: '⚠️ エラーが発生しました',
           }],
         });
       }
@@ -84,7 +84,7 @@ export class CommandHandler {
         replyToken,
         messages: [{
           type: 'text',
-          text: '既にセッションが開始されています。\n「状況」で確認するか、「終了」してから新規開始してください',
+          text: '⚠️ 既に開始済みです\n\n「状況」で確認 / 「終了」で再開始',
         }],
       });
       return;
@@ -128,27 +128,19 @@ export class CommandHandler {
 
     await storageService.createSession(session);
 
-    // 返信メッセージ
-    const message = `🍻 清算くんを開始します！
-
-【重要】まず参加者全員が「参加」と入力してください！
-
-現在の参加者: ${session.members.length}名
-・${userProfile.displayName}さん（セッション作成者）
-
-【記録方法】
-一軒目 14000円
-ラーメン 500円
-タクシー 3000
-
-のように入力してください
-(ラベル + スペース + 金額)
-
-💡 「ヘルプ」または「?」で詳しい使い方を表示`;
-
+    // 返信メッセージ（簡潔に）
     await client.replyMessage({
       replyToken,
-      messages: [{ type: 'text', text: message }],
+      messages: [
+        {
+          type: 'text',
+          text: `🍻 清算くん開始！\n\n参加者: ${session.members.length}名\n・${userProfile.displayName}さん`
+        },
+        {
+          type: 'text',
+          text: `⚠️ まず全員「参加」と入力してね！\n\n記録例:\n一軒目 14000円\nラーメン 500`
+        }
+      ],
     });
   }
 
@@ -165,7 +157,7 @@ export class CommandHandler {
         replyToken,
         messages: [{
           type: 'text',
-          text: 'まず「開始」と入力してセッションを開始してください',
+          text: '⚠️ まず「開始」してください',
         }],
       });
       return;
@@ -180,7 +172,7 @@ export class CommandHandler {
         replyToken,
         messages: [{
           type: 'text',
-          text: `${userProfile.displayName}さんはまだ参加登録されていません。\nまず「参加」と入力してください！`,
+          text: `⚠️ まず「参加」してください`,
         }],
       });
       return;
@@ -203,20 +195,8 @@ export class CommandHandler {
 
     await storageService.addPayment(groupId, payment);
 
-    // 返信メッセージ
-    const perPerson = Math.floor(paymentData.amount / session.members.length);
-    const totalAmount = session.payments
-      .filter((p) => !p.isDeleted)
-      .reduce((sum, p) => sum + p.amount, 0) + paymentData.amount;
-
-    const message = MessageFormatter.formatPaymentMessage(
-      paymentData.label,
-      paymentData.amount,
-      userProfile.displayName,
-      session.members.length,
-      perPerson,
-      totalAmount
-    );
+    // 返信メッセージ（簡潔に）
+    const message = `✅ ${paymentData.label} ${paymentData.amount.toLocaleString()}円 記録しました！`;
 
     await client.replyMessage({
       replyToken,
@@ -232,7 +212,7 @@ export class CommandHandler {
         replyToken,
         messages: [{
           type: 'text',
-          text: 'まず「開始」と入力してセッションを開始してください',
+          text: '⚠️ まず「開始」してください',
         }],
       });
       return;
@@ -243,7 +223,7 @@ export class CommandHandler {
         replyToken,
         messages: [{
           type: 'text',
-          text: '支払い記録がありません。\n「一軒目 14000円」のように支払いを記録してください',
+          text: '⚠️ 支払い記録がありません',
         }],
       });
       return;
@@ -276,7 +256,7 @@ export class CommandHandler {
         replyToken,
         messages: [{
           type: 'text',
-          text: 'セッションが開始されていません。「開始」と入力してください',
+          text: '⚠️ まず「開始」してください',
         }],
       });
       return;
@@ -298,7 +278,7 @@ export class CommandHandler {
         replyToken,
         messages: [{
           type: 'text',
-          text: 'キャンセルする支払い記録がありません',
+          text: '⚠️ キャンセルする記録がありません',
         }],
       });
       return;
@@ -316,7 +296,7 @@ export class CommandHandler {
       replyToken,
       messages: [{
         type: 'text',
-        text: `✅ ${lastPayment.label}の記録をキャンセルしました`,
+        text: `✅ ${lastPayment.label} をキャンセルしました`,
       }],
     });
   }
@@ -329,7 +309,7 @@ export class CommandHandler {
         replyToken,
         messages: [{
           type: 'text',
-          text: 'セッションが開始されていません',
+          text: '⚠️ セッションがありません',
         }],
       });
       return;
@@ -341,7 +321,7 @@ export class CommandHandler {
       replyToken,
       messages: [{
         type: 'text',
-        text: '✅ セッションを終了しました。\nお疲れ様でした！',
+        text: '✅ 終了しました！お疲れ様でした',
       }],
     });
   }
@@ -364,7 +344,7 @@ export class CommandHandler {
         replyToken,
         messages: [{
           type: 'text',
-          text: 'まず「開始」と入力してセッションを開始してください',
+          text: '⚠️ まず「開始」してください',
         }],
       });
       return;
@@ -379,7 +359,7 @@ export class CommandHandler {
         replyToken,
         messages: [{
           type: 'text',
-          text: `${userProfile.displayName}さんは既に参加済みです！\n\n現在の参加者: ${session.members.length}名`,
+          text: `⚠️ ${userProfile.displayName}さんは参加済みです`,
         }],
       });
       return;
@@ -399,15 +379,9 @@ export class CommandHandler {
 
     await storageService.updateSession(groupId, { members: session.members });
 
-    // 返信メッセージ
-    const memberList = session.members.map(m => `・${m.displayName}さん`).join('\n');
-    const message = `✅ ${userProfile.displayName}さんが参加しました！
-
-【現在の参加者: ${session.members.length}名】
-${memberList}
-
-💡 支払いを記録するには:
-「一軒目 14000円」のように入力してください`;
+    // 返信メッセージ（簡潔に）
+    const memberList = session.members.map(m => m.displayName).join(', ');
+    const message = `✅ ${userProfile.displayName}さん参加！\n\n参加者: ${session.members.length}名\n${memberList}`;
 
     await client.replyMessage({
       replyToken,
@@ -421,32 +395,18 @@ ${memberList}
 
     const replyToken = event.replyToken;
 
-    const welcomeMessage = `私はグループチャット専用の精算くんです⚡️
-
-※個人では使えません！
-
-🔥使い方
-
-1️⃣「開始」でセッション開始
-2️⃣ 参加者全員が「参加」と入力（重要！）
-3️⃣ 支払いを記録（例: 一軒目 14000円）
-4️⃣「清算」で精算結果を表示
-
-【基本コマンド】
-☑︎ 開始 / はじめ - セッション開始
-☑︎ 参加 / さんか - 参加登録
-☑︎ 状況 / 確認 - 途中経過
-☑︎ 清算 / せいさん - 精算
-☑︎ ヘルプ / ? - 詳しい使い方
-
-⚠️ 注意
-・支払い記録する前に必ず「参加」してください
-・ラベル + スペース + 金額（例: ラーメン 500円）
-・半角・全角スペースどちらもOK`;
-
     await client.replyMessage({
       replyToken,
-      messages: [{ type: 'text', text: welcomeMessage }],
+      messages: [
+        {
+          type: 'text',
+          text: `⚡️ 精算くんです！\n\nグループ専用の割り勘ボットです`
+        },
+        {
+          type: 'text',
+          text: `使い方:\n1️⃣「開始」\n2️⃣ 全員「参加」\n3️⃣ 支払い記録\n4️⃣「清算」\n\n詳しくは「?」`
+        }
+      ],
     });
 
     console.log('✅ Welcome message sent to group');
