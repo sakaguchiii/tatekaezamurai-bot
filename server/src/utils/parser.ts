@@ -1,48 +1,60 @@
 export class CommandParser {
   // 「開始」コマンド
   static isStartCommand(text: string): boolean {
-    return text.trim() === '開始';
+    const normalized = text.trim().toLowerCase();
+    return normalized === '開始' || normalized === 'はじめ' || normalized === 'start';
   }
 
   // 支払い記録コマンド(一軒目 14000円)
   static parsePaymentCommand(text: string): { label: string; amount: number } | null {
-    // 正規表現: 一軒目/1軒目 14000/14,000 円(オプション)
-    const regex = /^([一二三四1234]軒目|追加)\s*(\d{1,3}(?:,\d{3})*|\d+)円?/;
-    const match = text.match(regex);
+    // 正規表現: 柔軟なラベル + 金額
+    // 半角・全角スペース両対応
+    // 例: 一軒目 2000円、ラーメン　500円、タクシー代 3000
+    const regex = /^(.+?)[\s　]+([\d,]+)円?$/;
+    const match = text.trim().match(regex);
 
     if (!match) return null;
 
-    const label = match[1];
+    const label = match[1].trim();
     const amountStr = match[2].replace(/,/g, ''); // カンマ除去
     const amount = parseInt(amountStr, 10);
 
-    if (amount <= 0) return null;
+    // 金額チェック
+    if (isNaN(amount) || amount <= 0) return null;
+
+    // ラベルが空でないことを確認
+    if (!label) return null;
 
     return { label, amount };
   }
 
   // 清算コマンド
   static isSettleCommand(text: string): boolean {
-    return text.trim() === '清算';
+    const normalized = text.trim().toLowerCase();
+    return normalized === '清算' || normalized === 'せいさん' || normalized === '精算' || normalized === 'settle';
   }
 
   // 状況確認コマンド
   static isStatusCommand(text: string): boolean {
-    return text.trim() === '状況';
+    const normalized = text.trim().toLowerCase();
+    return normalized === '状況' || normalized === '確認' || normalized === 'じょうきょう' || normalized === 'status';
   }
 
   // キャンセルコマンド
   static isCancelCommand(text: string): boolean {
-    return text.trim() === 'キャンセル';
+    const normalized = text.trim().toLowerCase();
+    return normalized === 'キャンセル' || normalized === 'きゃんせる' || normalized === '取消' || normalized === 'cancel';
   }
 
   // ヘルプコマンド
   static isHelpCommand(text: string): boolean {
-    return text.trim() === 'ヘルプ';
+    const normalized = text.trim().toLowerCase();
+    return normalized === 'ヘルプ' || normalized === 'へるぷ' || normalized === '使い方' || normalized === 'help' || normalized === '?';
   }
 
   // 終了コマンド
   static isEndCommand(text: string): boolean {
-    return text.trim() === '終了';
+    const normalized = text.trim().toLowerCase();
+    return normalized === '終了' || normalized === 'しゅうりょう' || normalized === 'おわり' || normalized === 'end';
   }
 }

@@ -88,13 +88,11 @@ export class CommandHandler {
       return;
     }
 
-    // グループメンバー取得
-    const memberCount = 10; // グループ人数は取得できないため固定値を使用
-
-    // メンバープロフィール取得は制限があるため、最初のユーザーのみ
+    // メンバープロフィール取得
     const userProfile = await client.getGroupMemberProfile(groupId, userId);
 
-    // 簡易的にメンバーリストを作成(実際は参加時に追加)
+    // 最初のメンバーとしてセッション作成者を登録
+    // 他のメンバーは支払い記録時に自動追加される
     const members = [{
       userId: userProfile.userId,
       displayName: userProfile.displayName,
@@ -129,16 +127,20 @@ export class CommandHandler {
     await storageService.createSession(session);
 
     // 返信メッセージ
-    const message = `🍻 たてかえ侍を開始します！
+    const message = `🍻 清算くんを開始します！
 
 【参加メンバー】
-グループメンバー全員が対象です
-(グループ人数: 約${memberCount}名)
+支払いを記録した人が自動的にメンバーに追加されます
 
-支払いを記録するには:
-「一軒目 14000円」のように入力してください
+【記録方法】
+一軒目 14000円
+ラーメン 500円
+タクシー 3000
 
-💡 使い方を見る → 「ヘルプ」`;
+のように入力してください
+(ラベル + 半角スペース + 金額)
+
+💡 使い方を見る → 「ヘルプ」または「?」`;
 
     await client.replyMessage({
       replyToken,
