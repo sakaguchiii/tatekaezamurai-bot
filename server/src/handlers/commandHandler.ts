@@ -43,6 +43,8 @@ export class CommandHandler {
     try {
       if (CommandParser.isStartCommand(text)) {
         await this.handleStart(replyToken, groupId, userId);
+      } else if (CommandParser.isJoinMemberCommand(text)) {
+        await this.handleJoinMember(replyToken, groupId, userId);
       } else if (CommandParser.isSettleCommand(text)) {
         await this.handleSettle(replyToken, groupId);
       } else if (CommandParser.isStatusCommand(text)) {
@@ -129,8 +131,10 @@ export class CommandHandler {
     // 返信メッセージ
     const message = `🍻 清算くんを開始します！
 
-【参加メンバー】
-支払いを記録した人が自動的にメンバーに追加されます
+【重要】まず参加者全員が「参加」と入力してください！
+
+現在の参加者: ${session.members.length}名
+・${userProfile.displayName}さん（セッション作成者）
 
 【記録方法】
 一軒目 14000円
@@ -138,9 +142,9 @@ export class CommandHandler {
 タクシー 3000
 
 のように入力してください
-(ラベル + 半角スペース + 金額)
+(ラベル + スペース + 金額)
 
-💡 使い方を見る → 「ヘルプ」または「?」`;
+💡 「ヘルプ」または「?」で詳しい使い方を表示`;
 
     await client.replyMessage({
       replyToken,
@@ -170,19 +174,16 @@ export class CommandHandler {
     // ユーザープロフィール取得
     const userProfile = await client.getGroupMemberProfile(groupId, userId);
 
-    // ユーザーがメンバーリストにいない場合は追加
+    // ユーザーがメンバーリストにいるかチェック
     if (!session.members.find(m => m.userId === userId)) {
-      session.members.push({
-        userId: userProfile.userId,
-        displayName: userProfile.displayName,
-        pictureUrl: userProfile.pictureUrl || '',
-        joinedAt: new Date().toISOString(),
-        participationRange: {
-          startFrom: 0,
-          endAt: null,
-        },
+      await client.replyMessage({
+        replyToken,
+        messages: [{
+          type: 'text',
+          text: `${userProfile.displayName}さんはまだ参加登録されていません。\nまず「参加」と入力してください！`,
+        }],
       });
-      await storageService.updateSession(groupId, { members: session.members });
+      return;
     }
 
     // 支払い記録作成
@@ -355,6 +356,65 @@ export class CommandHandler {
     });
   }
 
+  // 「参加」コマンド処理
+  private async handleJoinMember(replyToken: string, groupId: string, userId: string): Promise<void> {
+    const session = await storageService.getSession(groupId);
+    if (!session || session.status !== 'active') {
+      await client.replyMessage({
+        replyToken,
+        messages: [{
+          type: 'text',
+          text: 'まず「開始」と入力してセッションを開始してください',
+        }],
+      });
+      return;
+    }
+
+    // ユーザープロフィール取得
+    const userProfile = await client.getGroupMemberProfile(groupId, userId);
+
+    // 既にメンバーリストにいるかチェック
+    if (session.members.find(m => m.userId === userId)) {
+      await client.replyMessage({
+        replyToken,
+        messages: [{
+          type: 'text',
+          text: `${userProfile.displayName}さんは既に参加済みです！\n\n現在の参加者: ${session.members.length}名`,
+        }],
+      });
+      return;
+    }
+
+    // メンバーに追加
+    session.members.push({
+      userId: userProfile.userId,
+      displayName: userProfile.displayName,
+      pictureUrl: userProfile.pictureUrl || '',
+      joinedAt: new Date().toISOString(),
+      participationRange: {
+        startFrom: session.payments.length,
+        endAt: null,
+      },
+    });
+
+    await storageService.updateSession(groupId, { members: session.members });
+
+    // 返信メッセージ
+    const memberList = session.members.map(m => `・${m.displayName}さん`).join('\n');
+    const message = `✅ ${userProfile.displayName}さんが参加しました！
+
+【現在の参加者: ${session.members.length}名】
+${memberList}
+
+💡 支払いを記録するには:
+「一軒目 14000円」のように入力してください`;
+
+    await client.replyMessage({
+      replyToken,
+      messages: [{ type: 'text', text: message }],
+    });
+  }
+
   // グループ参加時のウェルカムメッセージ
   async handleJoin(event: line.WebhookEvent): Promise<void> {
     if (event.type !== 'join') return;
@@ -367,23 +427,22 @@ export class CommandHandler {
 
 🔥使い方
 
-☑︎記録開始：「開始」「はじめ」
+1️⃣「開始」でセッション開始
+2️⃣ 参加者全員が「参加」と入力（重要！）
+3️⃣ 支払いを記録（例: 一軒目 14000円）
+4️⃣「清算」で精算結果を表示
 
-☑︎途中経過：「状況」「確認」
+【基本コマンド】
+☑︎ 開始 / はじめ - セッション開始
+☑︎ 参加 / さんか - 参加登録
+☑︎ 状況 / 確認 - 途中経過
+☑︎ 清算 / せいさん - 精算
+☑︎ ヘルプ / ? - 詳しい使い方
 
-☑︎精算：「精算」「せいさん」
-
-☑︎終了：「終了」
-
-⚠️書き方のルール
-
-・〇〇 xxxx円 の形式
-
-・金額は半角数字
-
-・円は省略可能
-
-👾「キャンセル」で最後の記録を削除できます`;
+⚠️ 注意
+・支払い記録する前に必ず「参加」してください
+・ラベル + スペース + 金額（例: ラーメン 500円）
+・半角・全角スペースどちらもOK`;
 
     await client.replyMessage({
       replyToken,

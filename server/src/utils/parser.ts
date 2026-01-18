@@ -5,6 +5,12 @@ export class CommandParser {
     return normalized === '開始' || normalized === 'はじめ' || normalized === 'start';
   }
 
+  // 「参加」コマンド
+  static isJoinMemberCommand(text: string): boolean {
+    const normalized = text.trim().toLowerCase();
+    return normalized === '参加' || normalized === 'さんか' || normalized === 'join';
+  }
+
   // 支払い記録コマンド(一軒目 14000円)
   static parsePaymentCommand(text: string): { label: string; amount: number } | null {
     // 正規表現: 柔軟なラベル + 金額
