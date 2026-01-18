@@ -128,7 +128,7 @@ export class CommandHandler {
 
     await storageService.createSession(session);
 
-    // 返信メッセージ（3つに分割して分かりやすく）
+    // 返信メッセージ（3つに分割）
     await client.replyMessage({
       replyToken,
       messages: [
@@ -142,7 +142,7 @@ export class CommandHandler {
         },
         {
           type: 'text',
-          text: `記録する際は\n場所　金額\nの形式で入力してね！\n\n例: 一軒目 5000円`
+          text: `記録は「場所 金額」で入力！\n例： 一軒目 5000`
         }
       ],
     });
