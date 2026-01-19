@@ -1,13 +1,33 @@
+# Node modules
 node_modules/
+server/node_modules/
+
+# Environment variables
 .env
 .env.local
-*.log
-.firebase/
-.firebaserc
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
-.DS_Store
+server/.env
+
+# Build output
 dist/
 lib/
-serviceAccountKey.json
+server/dist/
+
+# Data files (JSONストレージ)
+server/data/sessions/
+server/data/*.json
+!server/data/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

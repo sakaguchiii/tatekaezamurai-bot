@@ -101,9 +101,16 @@ LINEグループに「清算くん」を追加
 
 ```
 tatekaezamurai-bot/
-├── server/
+├── README.md                           # プロジェクト概要
+├── 現在の仕様_v260119.md               # 詳細な仕様書
+├── 運用手順書_v260119.md               # 運用手順
+├── 修正履歴_v260118.md                 # 修正履歴
+├── Raspberry Pi初期設定手順.md         # ラズパイ初期設定
+├── Raspberry Piデプロイ手順.md         # ラズパイデプロイ
+├── .gitignore                          # Git除外設定
+├── server/                             # メインアプリケーション
 │   ├── src/
-│   │   ├── index.ts                    # サーバーのエントリーポイント
+│   │   ├── index.ts                    # エントリーポイント
 │   │   ├── handlers/
 │   │   │   └── commandHandler.ts       # コマンド処理
 │   │   ├── services/
@@ -112,16 +119,15 @@ tatekaezamurai-bot/
 │   │   │   ├── calculator.ts           # 計算ロジック
 │   │   │   ├── formatter.ts            # メッセージフォーマット
 │   │   │   └── parser.ts               # コマンドパース
-│   │   └── types/
-│   │       └── index.ts                # 型定義
+│   │   ├── types/
+│   │   │   └── index.ts                # 型定義
+│   │   └── data/                       # JSONデータ保存先
 │   ├── dist/                           # ビルド後のJS
-│   ├── data/                           # JSONデータ
+│   ├── package.json
+│   ├── tsconfig.json
 │   └── .env                            # 環境変数
-│
-├── 現在の仕様_v260119.md               # 仕様書
-├── 運用手順書_v260119.md               # 運用手順
-├── 修正履歴_v260118.md                 # 修正履歴
-└── README.md                           # このファイル
+└── scripts/                            # ユーティリティスクリプト
+    └── 初回Git設定.sh                  # Git初期設定
 ```
 
 ---
