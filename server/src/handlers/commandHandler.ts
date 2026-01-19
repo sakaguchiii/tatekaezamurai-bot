@@ -200,7 +200,7 @@ export class CommandHandler {
     await storageService.addPayment(groupId, payment);
 
     // 返信メッセージ（簡潔に）
-    const message = `💡 ${paymentData.label} ${paymentData.amount.toLocaleString()}円 記録！`;
+    const message = `✅ ${paymentData.label} ${paymentData.amount.toLocaleString()}円 記録！`;
 
     await client.replyMessage({
       replyToken,
