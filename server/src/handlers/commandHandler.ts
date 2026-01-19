@@ -325,7 +325,7 @@ export class CommandHandler {
       replyToken,
       messages: [{
         type: 'text',
-        text: '✅ 終了しました！お疲れ様でした',
+        text: 'OK！これにて終了！',
       }],
     });
   }
@@ -385,7 +385,7 @@ export class CommandHandler {
 
     // 返信メッセージ（簡潔に）
     const memberList = session.members.map(m => m.displayName).join(', ');
-    const message = `✅ ${userProfile.displayName}さん参加！\n\n参加者: ${session.members.length}名\n${memberList}`;
+    const message = `参加者: ${session.members.length}名\n${memberList}`;
 
     await client.replyMessage({
       replyToken,

@@ -13,7 +13,7 @@ export class MessageFormatter {
       .filter((p) => !p.isDeleted)
       .reduce((sum, p) => sum + p.amount, 0);
 
-    const perPerson = Math.floor(totalAmount / session.members.length);
+    const perPerson = Math.round(totalAmount / session.members.length);
 
     // 送金一覧（簡潔に）
     if (settlements.length === 0) {

@@ -21,7 +21,7 @@ export class Calculator {
       if (payment.isDeleted) return;
 
       const participantCount = payment.participants.length;
-      const perPerson = Math.floor(payment.amount / participantCount);
+      const perPerson = Math.round(payment.amount / participantCount);
 
       // 立替者に加算
       if (balances[payment.paidBy.userId]) {
