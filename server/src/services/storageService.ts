@@ -9,19 +9,19 @@ const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 // データディレクトリが存在しない場合は作成
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  console.log('📁 Data directory created:', DATA_DIR);
+  console.log('📁 データディレクトリを作成:', DATA_DIR);
 }
 
 // バックアップディレクトリ作成
 if (!fs.existsSync(BACKUP_DIR)) {
   fs.mkdirSync(BACKUP_DIR, { recursive: true });
-  console.log('📁 Backup directory created:', BACKUP_DIR);
+  console.log('📁 バックアップディレクトリを作成:', BACKUP_DIR);
 }
 
 // sessions.jsonが存在しない場合は作成
 if (!fs.existsSync(SESSIONS_FILE)) {
   fs.writeFileSync(SESSIONS_FILE, JSON.stringify({}, null, 2));
-  console.log('📄 Sessions file created:', SESSIONS_FILE);
+  console.log('📄 セッションファイルを作成:', SESSIONS_FILE);
 }
 
 export class StorageService {
@@ -31,20 +31,20 @@ export class StorageService {
   private getAllSessions(): { [groupId: string]: Session } {
     try {
       if (!fs.existsSync(SESSIONS_FILE)) {
-        console.warn('⚠️ Sessions file not found, creating new one');
+        console.warn('⚠️ セッションファイルが見つかりません。新規作成します');
         fs.writeFileSync(SESSIONS_FILE, JSON.stringify({}, null, 2));
         return {};
       }
 
       const data = fs.readFileSync(SESSIONS_FILE, 'utf-8');
       if (!data.trim()) {
-        console.warn('⚠️ Sessions file is empty');
+        console.warn('⚠️ セッションファイルが空です');
         return {};
       }
 
       return JSON.parse(data);
     } catch (error) {
-      console.error('❌ Error reading sessions file:', error);
+      console.error('❌ セッションファイルの読み込みエラー:', error);
       // バックアップから復元を試みる
       return this.restoreFromBackup() || {};
     }
@@ -67,9 +67,9 @@ export class StorageService {
       const jsonData = JSON.stringify(sessions, null, 2);
       fs.writeFileSync(SESSIONS_FILE, jsonData, 'utf-8');
 
-      console.log('💾 Sessions saved successfully');
+      console.log('💾 セッションを保存しました');
     } catch (error) {
-      console.error('❌ Error writing sessions file:', error);
+      console.error('❌ セッションファイルの書き込みエラー:', error);
       throw error;
     } finally {
       this.isWriting = false;
@@ -90,13 +90,13 @@ export class StorageService {
       // 現在のデータをバックアップ
       if (fs.existsSync(SESSIONS_FILE)) {
         fs.copyFileSync(SESSIONS_FILE, backupFile);
-        console.log('💾 Backup created:', backupFile);
+        console.log('💾 バックアップを作成:', backupFile);
 
         // 古いバックアップを削除（7日以上前）
         this.cleanOldBackups();
       }
     } catch (error) {
-      console.error('⚠️ Error creating backup:', error);
+      console.error('⚠️ バックアップの作成エラー:', error);
       // バックアップ失敗はエラーとしない
     }
   }
@@ -114,11 +114,11 @@ export class StorageService {
 
         if (stats.mtime < sevenDaysAgo) {
           fs.unlinkSync(filePath);
-          console.log('🗑️ Old backup deleted:', file);
+          console.log('🗑️ 古いバックアップを削除:', file);
         }
       });
     } catch (error) {
-      console.error('⚠️ Error cleaning old backups:', error);
+      console.error('⚠️ 古いバックアップの削除エラー:', error);
     }
   }
 
@@ -138,11 +138,11 @@ export class StorageService {
 
       const backupPath = path.join(BACKUP_DIR, latestBackup);
       const data = fs.readFileSync(backupPath, 'utf-8');
-      console.log('♻️ Restored from backup:', latestBackup);
+      console.log('♻️ バックアップから復元:', latestBackup);
 
       return JSON.parse(data);
     } catch (error) {
-      console.error('❌ Error restoring from backup:', error);
+      console.error('❌ バックアップからの復元エラー:', error);
       return null;
     }
   }

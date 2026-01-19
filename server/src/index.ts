@@ -12,12 +12,12 @@ function validateEnv(): void {
   const missing = required.filter(key => !process.env[key]);
 
   if (missing.length > 0) {
-    console.error('❌ Missing required environment variables:', missing.join(', '));
-    console.error('💡 Please check your .env file');
+    console.error('❌ 必須の環境変数が不足しています:', missing.join(', '));
+    console.error('💡 .envファイルを確認してください');
     process.exit(1);
   }
 
-  console.log('✅ Environment variables validated');
+  console.log('✅ 環境変数を確認しました');
 }
 
 validateEnv();
@@ -40,7 +40,7 @@ app.post('/webhook', express.json(), express.urlencoded({ extended: true }), asy
   // Webhookの署名検証
   const signature = req.get('x-line-signature');
   if (!signature) {
-    console.error('No signature');
+    console.error('❌ 署名がありません');
     res.status(401).send('Unauthorized');
     return;
   }
@@ -50,12 +50,12 @@ app.post('/webhook', express.json(), express.urlencoded({ extended: true }), asy
     // LINE SDKの署名検証を使用
     const body = JSON.stringify(req.body);
     if (!line.validateSignature(body, lineConfig.channelSecret, signature)) {
-      console.error('Invalid signature');
+      console.error('❌ 署名が無効です');
       res.status(401).send('Unauthorized');
       return;
     }
   } catch (error) {
-    console.error('Signature validation error:', error);
+    console.error('❌ 署名検証エラー:', error);
     res.status(400).send('Bad Request');
     return;
   }
@@ -67,7 +67,7 @@ app.post('/webhook', express.json(), express.urlencoded({ extended: true }), asy
   await Promise.all(
     events.map(async (event) => {
       try {
-        console.log('Event received:', JSON.stringify(event, null, 2));
+        console.log('📨 イベントを受信:', JSON.stringify(event, null, 2));
         if (event.type === 'message') {
           await commandHandler.handleMessage(event);
         } else if (event.type === 'join') {
@@ -75,7 +75,7 @@ app.post('/webhook', express.json(), express.urlencoded({ extended: true }), asy
           await commandHandler.handleJoin(event);
         }
       } catch (error) {
-        console.error('Error handling event:', error);
+        console.error('❌ イベント処理エラー:', error);
       }
     })
   );
@@ -99,10 +99,10 @@ app.listen(PORT, () => {
   console.log('========================================');
   console.log('🍻 清算くん LINEボット サーバー起動');
   console.log('========================================');
-  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`🚀 サーバーが起動しました ポート: ${PORT}`);
   console.log(`📍 Webhook URL: http://localhost:${PORT}/webhook`);
-  console.log(`💚 Health check: http://localhost:${PORT}/health`);
-  console.log(`⏰ Started at: ${new Date().toLocaleString('ja-JP')}`);
+  console.log(`💚 ヘルスチェック: http://localhost:${PORT}/health`);
+  console.log(`⏰ 開始時刻: ${new Date().toLocaleString('ja-JP')}`);
   console.log('========================================');
   console.log('\n');
   console.log('💡 Tip: ngrok経由で外部公開する場合:');

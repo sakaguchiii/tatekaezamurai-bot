@@ -62,7 +62,7 @@ export class CommandHandler {
         }
       }
     } catch (error) {
-      console.error('Error handling command:', error);
+      console.error('❌ コマンド処理エラー:', error);
       if (replyToken) {
         await client.replyMessage({
           replyToken,
@@ -413,7 +413,7 @@ export class CommandHandler {
       ],
     });
 
-    console.log('✅ Welcome message sent to group');
+    console.log('✅ ウェルカムメッセージを送信しました');
   }
 }
 
