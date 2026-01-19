@@ -134,15 +134,15 @@ export class CommandHandler {
       messages: [
         {
           type: 'text',
-          text: `🍻 清算くん開始！\n\n参加者: ${session.members.length}名\n・${userProfile.displayName}さん`
+          text: `清算くん開始！\n⚡️現在の参加者：${session.members.length}名\n・${userProfile.displayName}さん`
         },
         {
           type: 'text',
-          text: `⚠️ 参加する人は「参加」と入力してね！`
+          text: `⚠️ 参加する人は「参加」と入力！`
         },
         {
           type: 'text',
-          text: `記録は「場所 金額」で入力！\n例： 一軒目 5000`
+          text: `記録は「項目　金額」で入力！\n例： 一軒目 5000`
         }
       ],
     });
@@ -200,7 +200,7 @@ export class CommandHandler {
     await storageService.addPayment(groupId, payment);
 
     // 返信メッセージ（簡潔に）
-    const message = `✅ ${paymentData.label} ${paymentData.amount.toLocaleString()}円 記録しました！`;
+    const message = `💡 ${paymentData.label} ${paymentData.amount.toLocaleString()}円 記録！`;
 
     await client.replyMessage({
       replyToken,
@@ -325,7 +325,7 @@ export class CommandHandler {
       replyToken,
       messages: [{
         type: 'text',
-        text: 'OK！これにて終了！',
+        text: 'OK！終了しました💫',
       }],
     });
   }
@@ -385,7 +385,7 @@ export class CommandHandler {
 
     // 返信メッセージ（簡潔に）
     const memberList = session.members.map(m => m.displayName).join(', ');
-    const message = `参加者: ${session.members.length}名\n${memberList}`;
+    const message = `⚡️現在の参加者：${session.members.length}名\n${memberList}`;
 
     await client.replyMessage({
       replyToken,
@@ -404,11 +404,11 @@ export class CommandHandler {
       messages: [
         {
           type: 'text',
-          text: `⚡️ 精算くんです！\n\nグループ専用の割り勘ボットです`
+          text: `⚡️ 精算くんです！\nグループ専用の割り勘ツールです`
         },
         {
           type: 'text',
-          text: `使い方:\n1️⃣「開始」\n2️⃣ 全員「参加」\n3️⃣ 支払い記録\n4️⃣「清算」\n\n詳しくは「ヘルプ」`
+          text: `使い方:\n1️⃣「開始」\n2️⃣ 全員「参加」\n3️⃣ 支払い記録\n4️⃣「清算」\n詳しくは「ヘルプ」`
         }
       ],
     });
