@@ -21,7 +21,8 @@ export class Calculator {
       if (payment.isDeleted) return;
 
       const participantCount = payment.participants.length;
-      const perPerson = Math.round(payment.amount / participantCount);
+      const perPerson = Math.floor(payment.amount / participantCount);
+      const remainder = payment.amount - (perPerson * participantCount);
 
       // 立替者に加算
       if (balances[payment.paidBy.userId]) {
@@ -34,6 +35,11 @@ export class Calculator {
           balances[userId].owes += perPerson;
         }
       });
+
+      // 端数（余り）を立替者の負担に加算
+      if (remainder > 0 && balances[payment.paidBy.userId]) {
+        balances[payment.paidBy.userId].owes += remainder;
+      }
     });
 
     // 差額計算
