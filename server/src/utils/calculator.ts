@@ -1,7 +1,7 @@
 import { Payment, Member, Balance, Settlement } from '../types';
 
 export class Calculator {
-  // 各メンバーの収支を計算
+  // 各メンバーの収支を計算（人間の計算方法）
   static calculateBalances(payments: Payment[], members: Member[]): Balance[] {
     const balances: { [userId: string]: Balance } = {};
 
@@ -16,33 +16,53 @@ export class Calculator {
       };
     });
 
-    // 各支払いを処理
+    // 1. 各人が支払った金額を集計
     payments.forEach((payment) => {
       if (payment.isDeleted) return;
 
-      const participantCount = payment.participants.length;
-      const perPerson = Math.floor(payment.amount / participantCount);
-      const remainder = payment.amount - (perPerson * participantCount);
-
-      // 立替者に加算
       if (balances[payment.paidBy.userId]) {
         balances[payment.paidBy.userId].paid += payment.amount;
       }
+    });
 
-      // 参加者全員の負担額に加算
-      payment.participants.forEach((userId) => {
-        if (balances[userId]) {
-          balances[userId].owes += perPerson;
-        }
-      });
+    // 2. 合計金額を計算
+    const totalAmount = payments
+      .filter((p) => !p.isDeleted)
+      .reduce((sum, p) => sum + p.amount, 0);
 
-      // 端数（余り）を立替者の負担に加算
-      if (remainder > 0 && balances[payment.paidBy.userId]) {
-        balances[payment.paidBy.userId].owes += remainder;
+    // 3. 1人あたりの金額を計算（切り捨て）
+    const perPerson = Math.floor(totalAmount / members.length);
+
+    // 4. 余り（端数）を計算
+    const remainder = totalAmount - (perPerson * members.length);
+
+    // 5. 各人の負担額を設定
+    members.forEach((m) => {
+      if (balances[m.userId]) {
+        balances[m.userId].owes = perPerson;
       }
     });
 
-    // 差額計算
+    // 6. 余りを最も多く支払った人に負担させる
+    if (remainder > 0) {
+      // 最も多く支払った人を見つける
+      let maxPaidUserId = members[0].userId;
+      let maxPaid = balances[maxPaidUserId].paid;
+
+      members.forEach((m) => {
+        if (balances[m.userId].paid > maxPaid) {
+          maxPaid = balances[m.userId].paid;
+          maxPaidUserId = m.userId;
+        }
+      });
+
+      // その人に余りを負担させる
+      if (balances[maxPaidUserId]) {
+        balances[maxPaidUserId].owes += remainder;
+      }
+    }
+
+    // 7. 差額計算（収支）
     Object.keys(balances).forEach((userId) => {
       balances[userId].balance = balances[userId].paid - balances[userId].owes;
     });
