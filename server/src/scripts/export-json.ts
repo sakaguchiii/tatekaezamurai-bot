@@ -57,6 +57,7 @@ function exportToJSON(options: ExportOptions = {}): ExportResult {
 
     if (result.totalSessions === 0) {
       console.log('⚠️ エクスポートするセッションがありません');
+      result.success = true; // エラーではない
       return result;
     }
 
@@ -191,6 +192,7 @@ function main() {
   try {
     if (showStats) {
       showStatistics();
+      process.exit(0);
     } else {
       const result = exportToJSON(options);
 

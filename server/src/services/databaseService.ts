@@ -37,7 +37,7 @@ export class DatabaseService {
 
     // プリペアドステートメント（高速化）
     this.getSessionStmt = this.db.prepare(
-      'SELECT data FROM sessions WHERE group_id = ? AND status IN ("active", "settled") ORDER BY updated_at DESC LIMIT 1'
+      'SELECT data FROM sessions WHERE group_id = ? AND status IN (\'active\', \'settled\') ORDER BY updated_at DESC LIMIT 1'
     );
 
     this.upsertSessionStmt = this.db.prepare(`
