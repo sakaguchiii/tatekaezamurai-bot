@@ -99,7 +99,7 @@ export class CacheService {
     if (session) {
       // ステータス更新
       session.status = 'completed';
-      session.endAt = new Date().toISOString();
+      session.updatedAt = new Date().toISOString();
 
       // 即座にDBに保存
       databaseService.saveSession(session);

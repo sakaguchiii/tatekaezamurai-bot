@@ -25,6 +25,11 @@ server/data/*.db-shm
 npm-debug.log*
 logs/
 
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+
 # OS files
 .DS_Store
 Thumbs.db

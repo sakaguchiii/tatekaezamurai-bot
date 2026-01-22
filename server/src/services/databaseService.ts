@@ -89,7 +89,7 @@ export class DatabaseService {
   saveSession(session: Session): void {
     try {
       this.upsertSessionStmt.run(
-        session.sessionId,
+        session.groupId, // IDとしてgroupIdを使用
         session.groupId,
         session.status,
         session.createdAt,
@@ -97,7 +97,7 @@ export class DatabaseService {
         JSON.stringify(session)
       );
     } catch (error) {
-      console.error('❌ セッション保存エラー:', session.sessionId, error);
+      console.error('❌ セッション保存エラー:', session.groupId, error);
       throw error;
     }
   }
@@ -157,6 +157,18 @@ export class DatabaseService {
       console.log('✅ データベース最適化完了');
     } catch (error) {
       console.error('❌ 最適化エラー:', error);
+    }
+  }
+
+  /**
+   * WALチェックポイント実行
+   * WALファイルの内容を本体DBファイルにマージ
+   */
+  checkpoint(): void {
+    try {
+      this.db.pragma('wal_checkpoint(TRUNCATE)');
+    } catch (error) {
+      console.error('❌ WALチェックポイントエラー:', error);
     }
   }
 

@@ -1,6 +1,7 @@
 import express from 'express';
 import * as line from '@line/bot-sdk';
 import { commandHandler } from './handlers/commandHandler';
+import { backupService } from './services/backupService';
 import * as dotenv from 'dotenv';
 
 // 環境変数読み込み
@@ -108,4 +109,7 @@ app.listen(PORT, () => {
   console.log('💡 Tip: ngrok経由で外部公開する場合:');
   console.log('   ngrok http 3000');
   console.log('\n');
+
+  // 自動バックアップサービスを開始
+  backupService.start();
 });
