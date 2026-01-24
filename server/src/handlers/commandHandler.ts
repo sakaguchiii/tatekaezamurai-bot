@@ -90,6 +90,17 @@ export class CommandHandler {
       return;
     }
 
+    // グループ名を取得
+    let groupName = '';
+    try {
+      const groupSummary = await client.getGroupSummary(groupId);
+      groupName = groupSummary.groupName;
+      console.log(`📝 グループ名取得成功: ${groupName}`);
+    } catch (error) {
+      console.warn('⚠️ グループ名取得失敗:', error);
+      groupName = '';  // フォールバック: 空文字
+    }
+
     // メンバープロフィール取得
     const userProfile = await client.getGroupMemberProfile(groupId, userId);
 
@@ -109,7 +120,7 @@ export class CommandHandler {
     // セッション作成
     const session: Session = {
       groupId,
-      groupName: '',
+      groupName,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: {
