@@ -237,19 +237,22 @@ export class CommandHandler {
     const balances = Calculator.calculateBalances(session.payments, session.members);
     const settlements = Calculator.calculateSettlements(balances);
 
-    // セッション更新
+    // セッション更新（精算と同時に終了）
     await storageService.updateSession(groupId, {
       settlements,
-      status: 'settled',
+      status: 'completed',
     });
 
     // 返信メッセージ
-    const message = MessageFormatter.formatSettlementMessage(session, balances, settlements);
+    const message = MessageFormatter.formatSettlementMessage(session, balances, settlements)
+      + '\n\nセッション終了しました💫';
 
     await client.replyMessage({
       replyToken,
       messages: [{ type: 'text', text: message }],
     });
+
+    console.log(`✅ セッション精算・終了: ${groupId}`);
   }
 
   // 状況確認処理
