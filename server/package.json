@@ -16,6 +16,7 @@
     "export-json:active": "ts-node src/scripts/export-json.ts --active",
     "export-json:stats": "ts-node src/scripts/export-json.ts --stats",
     "get-user-info": "ts-node src/scripts/get-user-info.ts",
+    "get-users-from-log": "ts-node src/scripts/get-users-from-log.ts",
     "test": "jest --verbose",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
