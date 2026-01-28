@@ -1,5 +1,6 @@
 import * as line from '@line/bot-sdk';
 import { storageService } from '../services/storageService';
+import { friendService } from '../services/friendService';
 import { CommandParser } from '../utils/parser';
 import { Calculator } from '../utils/calculator';
 import { MessageFormatter } from '../utils/formatter';
@@ -428,6 +429,80 @@ export class CommandHandler {
     });
 
     console.log('✅ ウェルカムメッセージを送信しました');
+  }
+
+  // 友達追加時の処理
+  async handleFollow(event: line.WebhookEvent): Promise<void> {
+    if (event.type !== 'follow') return;
+
+    const userId = event.source.userId;
+    if (!userId) return;
+
+    const replyToken = event.replyToken;
+
+    try {
+      // ユーザー情報を取得
+      const profile = await client.getProfile(userId);
+
+      // データベースに保存
+      friendService.saveFriend({
+        userId: profile.userId,
+        displayName: profile.displayName,
+        pictureUrl: profile.pictureUrl || undefined,
+        statusMessage: profile.statusMessage || undefined,
+        followedAt: new Date().toISOString(),
+        isActive: true,
+      });
+
+      console.log(`👤 友達追加: ${profile.displayName} (${userId})`);
+
+      // ウェルカムメッセージ
+      await client.replyMessage({
+        replyToken,
+        messages: [
+          {
+            type: 'text',
+            text: `${profile.displayName}さん、友達追加ありがとうございます！🎉\n\n清算くんは、グループでの割り勘を簡単にするBotです。`
+          },
+          {
+            type: 'text',
+            text: `📝 使い方\n\n1️⃣ 友達とのLINEグループに私を追加\n2️⃣ グループで「開始」と送信\n3️⃣ メンバー全員が「参加」と送信\n4️⃣ 支払いを記録\n   例：1軒目 5000円\n   例：タクシー 2000\n5️⃣ 最後に「精算」と送信`
+          },
+          {
+            type: 'text',
+            text: `💡 ポイント\n\n・自動で割り勘を計算します\n・誰がいくら払えばいいか表示\n・個別チャットでは統計機能も使えます\n\n詳しくは「ヘルプ」と送信してください！`
+          }
+        ],
+      });
+    } catch (error) {
+      console.error('❌ 友達追加処理エラー:', error);
+
+      // エラー時も簡単なメッセージは送る
+      await client.replyMessage({
+        replyToken,
+        messages: [{
+          type: 'text',
+          text: `友達追加ありがとうございます！\n\n清算くんはグループでの割り勘を簡単にするBotです。\nグループに追加して「開始」と送信してください。`
+        }],
+      });
+    }
+  }
+
+  // 友達解除（ブロック）時の処理
+  async handleUnfollow(event: line.WebhookEvent): Promise<void> {
+    if (event.type !== 'unfollow') return;
+
+    const userId = event.source.userId;
+    if (!userId) return;
+
+    try {
+      // データベースを更新
+      friendService.unfollowFriend(userId);
+
+      console.log(`👋 ブロック/友達解除: ${userId}`);
+    } catch (error) {
+      console.error('❌ アンフォロー処理エラー:', error);
+    }
   }
 }
 

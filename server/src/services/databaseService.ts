@@ -5,7 +5,7 @@ import { Session } from '../types';
 
 const DATA_DIR = path.join(__dirname, '../data');
 const DB_PATH = path.join(DATA_DIR, 'database.db');
-const SCHEMA_PATH = path.join(__dirname, '../migrations/001_initial_schema.sql');
+const MIGRATIONS_DIR = path.join(__dirname, '../migrations');
 
 // データディレクトリが存在しない場合は作成
 if (!fs.existsSync(DATA_DIR)) {
@@ -55,12 +55,28 @@ export class DatabaseService {
   }
 
   /**
-   * スキーマ初期化
+   * スキーマ初期化（全マイグレーションを実行）
    */
   private initSchema(): void {
     try {
-      const schema = fs.readFileSync(SCHEMA_PATH, 'utf-8');
-      this.db.exec(schema);
+      // マイグレーションディレクトリ内の全SQLファイルを取得
+      const migrationFiles = fs.readdirSync(MIGRATIONS_DIR)
+        .filter(file => file.endsWith('.sql'))
+        .sort(); // ファイル名順にソート（001_, 002_, ...）
+
+      if (migrationFiles.length === 0) {
+        console.warn('⚠️ マイグレーションファイルが見つかりません');
+        return;
+      }
+
+      // 各マイグレーションを順番に実行
+      for (const file of migrationFiles) {
+        const filePath = path.join(MIGRATIONS_DIR, file);
+        const schema = fs.readFileSync(filePath, 'utf-8');
+        this.db.exec(schema);
+        console.log(`✅ マイグレーション実行: ${file}`);
+      }
+
       console.log('✅ データベーススキーマを初期化しました');
     } catch (error) {
       console.error('❌ スキーマ初期化エラー:', error);
@@ -216,6 +232,13 @@ export class DatabaseService {
       // 分析ログのエラーはメインの処理に影響させない
       console.error('⚠️ 分析イベント記録エラー:', error);
     }
+  }
+
+  /**
+   * データベースインスタンスを取得（他のサービスから使用）
+   */
+  getDatabase(): Database.Database {
+    return this.db;
   }
 }
 

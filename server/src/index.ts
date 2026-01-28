@@ -74,6 +74,12 @@ app.post('/webhook', express.json(), express.urlencoded({ extended: true }), asy
         } else if (event.type === 'join') {
           // グループに追加された時のウェルカムメッセージ
           await commandHandler.handleJoin(event);
+        } else if (event.type === 'follow') {
+          // 友達追加時の処理
+          await commandHandler.handleFollow(event);
+        } else if (event.type === 'unfollow') {
+          // ブロック/友達解除時の処理
+          await commandHandler.handleUnfollow(event);
         }
       } catch (error) {
         console.error('❌ イベント処理エラー:', error);
