@@ -1,6 +1,7 @@
 import * as line from '@line/bot-sdk';
 import { storageService } from '../services/storageService';
 import { friendService } from '../services/friendService';
+import { databaseService } from '../services/databaseService';
 import { CommandParser } from '../utils/parser';
 import { Calculator } from '../utils/calculator';
 import { MessageFormatter } from '../utils/formatter';
@@ -22,6 +23,40 @@ export class CommandHandler {
     const text = event.message.text;
     const source = event.source;
     const replyToken = event.replyToken;
+    const userId = source.userId!;
+
+    // 個別チャット用コマンド（履歴、統計）
+    if (source.type === 'user') {
+      try {
+        if (CommandParser.isHistoryCommand(text)) {
+          await this.handleHistory(replyToken, userId, text);
+        } else if (CommandParser.isStatsCommand(text)) {
+          await this.handleStats(replyToken, userId);
+        } else if (CommandParser.isHelpCommand(text)) {
+          await this.handleHelp(replyToken);
+        } else {
+          await client.replyMessage({
+            replyToken,
+            messages: [{
+              type: 'text',
+              text: '💡 個別チャットで使えるコマンド:\n・履歴\n・統計\n・ヘルプ\n\nグループでの割り勘は、グループチャットに追加してください！',
+            }],
+          });
+        }
+      } catch (error) {
+        console.error('❌ 個別チャットコマンドエラー:', error);
+        if (replyToken) {
+          await client.replyMessage({
+            replyToken,
+            messages: [{
+              type: 'text',
+              text: '⚠️ エラーが発生しました',
+            }],
+          });
+        }
+      }
+      return;
+    }
 
     // グループチャット以外は無視
     if (source.type !== 'group') {
@@ -38,7 +73,6 @@ export class CommandHandler {
     }
 
     const groupId = source.groupId!;
-    const userId = source.userId!;
 
     // コマンド判定
     try {
@@ -503,6 +537,51 @@ export class CommandHandler {
     } catch (error) {
       console.error('❌ アンフォロー処理エラー:', error);
     }
+  }
+
+  // 履歴表示処理（個別チャット用）
+  private async handleHistory(replyToken: string, userId: string, text: string): Promise<void> {
+    const options = CommandParser.parseHistoryCommand(text);
+
+    if (!options) {
+      await client.replyMessage({
+        replyToken,
+        messages: [{
+          type: 'text',
+          text: '⚠️ コマンド形式が正しくありません\n\n例:\n・履歴\n・履歴 20\n・履歴 3ヶ月',
+        }],
+      });
+      return;
+    }
+
+    // セッション取得
+    const sessions = databaseService.getUserSessions(userId, options);
+
+    // メッセージフォーマット
+    const message = MessageFormatter.formatHistoryMessage(sessions, userId, options);
+
+    await client.replyMessage({
+      replyToken,
+      messages: [{ type: 'text', text: message }],
+    });
+
+    console.log(`📜 履歴表示: ${userId} (${sessions.length}件)`);
+  }
+
+  // 統計表示処理（個別チャット用）
+  private async handleStats(replyToken: string, userId: string): Promise<void> {
+    // 統計取得
+    const stats = databaseService.getUserStats(userId);
+
+    // メッセージフォーマット
+    const message = MessageFormatter.formatStatsMessage(stats);
+
+    await client.replyMessage({
+      replyToken,
+      messages: [{ type: 'text', text: message }],
+    });
+
+    console.log(`📊 統計表示: ${userId} (${stats.totalSessions}回)`);
   }
 }
 

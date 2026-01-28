@@ -69,4 +69,72 @@ ${payments || '記録なし'}
 コマンド:
 開始/参加/状況/清算/終了/ヘルプ`;
   }
+
+  // 履歴メッセージ
+  static formatHistoryMessage(
+    sessions: Session[],
+    userId: string,
+    options?: { limit?: number; months?: number }
+  ): string {
+    if (sessions.length === 0) {
+      return '💳 清算履歴がありません';
+    }
+
+    const limit = options?.limit || 10;
+    const monthsText = options?.months ? `${options.months}ヶ月分` : '';
+
+    // 各セッションを簡潔に表示
+    const historyList = sessions.map((session) => {
+      // 日付フォーマット (YYYY/MM/DD)
+      const date = new Date(session.createdAt);
+      const dateStr = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+
+      // 合計金額
+      const totalAmount = session.payments
+        .filter((p) => !p.isDeleted)
+        .reduce((sum, p) => sum + p.amount, 0);
+
+      // ユーザーの支払額
+      const userAmount = session.payments
+        .filter((p) => !p.isDeleted && p.paidBy.userId === userId)
+        .reduce((sum, p) => sum + p.amount, 0);
+
+      const groupName = session.groupName || 'グループ';
+      const memberCount = session.members.length;
+
+      return `${dateStr} ${groupName} (${memberCount}名)\n合計¥${totalAmount.toLocaleString()} / あなた¥${userAmount.toLocaleString()}`;
+    }).join('\n\n');
+
+    const header = `💳 あなたの清算履歴${monthsText ? ` (${monthsText})` : ''} (最新${sessions.length}件)`;
+    const footer = sessions.length >= limit
+      ? `\n\n📊 「履歴 ${limit + 10}」で${limit + 10}件表示\n「履歴 3ヶ月」で期間指定\n「統計」で統計を表示`
+      : `\n\n📊 「統計」で統計を表示`;
+
+    return `${header}\n\n${historyList}${footer}`;
+  }
+
+  // 統計メッセージ
+  static formatStatsMessage(stats: {
+    totalSessions: number;
+    totalAmount: number;
+    thisMonthSessions: number;
+    thisMonthAmount: number;
+  }): string {
+    const avgAmount = stats.totalSessions > 0
+      ? Math.round(stats.totalAmount / stats.totalSessions)
+      : 0;
+
+    return `📊 あなたの統計
+
+【全期間】
+・参加回数: ${stats.totalSessions}回
+・総支払額: ¥${stats.totalAmount.toLocaleString()}
+・平均支払額: ¥${avgAmount.toLocaleString()}/回
+
+【今月】
+・参加回数: ${stats.thisMonthSessions}回
+・支払額: ¥${stats.thisMonthAmount.toLocaleString()}
+
+💡「履歴」で過去の清算を確認`;
+  }
 }

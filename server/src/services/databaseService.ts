@@ -240,6 +240,92 @@ export class DatabaseService {
   getDatabase(): Database.Database {
     return this.db;
   }
+
+  /**
+   * ユーザーが参加したセッション一覧を取得
+   */
+  getUserSessions(userId: string, options?: { limit?: number; months?: number }): Session[] {
+    try {
+      const limit = options?.limit || 10;
+      const months = options?.months;
+
+      let sql = `
+        SELECT data FROM sessions
+        WHERE status = 'completed'
+        AND json_extract(data, '$.members') LIKE ?
+      `;
+
+      // 期間フィルター
+      if (months) {
+        sql += ` AND created_at >= date('now', '-${months} months')`;
+      }
+
+      sql += ` ORDER BY created_at DESC LIMIT ?`;
+
+      const stmt = this.db.prepare(sql);
+      const rows = stmt.all(`%${userId}%`, limit) as any[];
+
+      return rows.map(row => JSON.parse(row.data) as Session);
+    } catch (error) {
+      console.error('❌ ユーザーセッション取得エラー:', userId, error);
+      return [];
+    }
+  }
+
+  /**
+   * ユーザーの統計情報を取得
+   */
+  getUserStats(userId: string): {
+    totalSessions: number;
+    totalAmount: number;
+    thisMonthSessions: number;
+    thisMonthAmount: number;
+  } {
+    try {
+      // 全期間の統計
+      const allSessionsStmt = this.db.prepare(`
+        SELECT data FROM sessions
+        WHERE status = 'completed'
+        AND json_extract(data, '$.members') LIKE ?
+      `);
+      const allSessions = allSessionsStmt.all(`%${userId}%`) as any[];
+
+      // 今月の統計
+      const thisMonthStmt = this.db.prepare(`
+        SELECT data FROM sessions
+        WHERE status = 'completed'
+        AND json_extract(data, '$.members') LIKE ?
+        AND created_at >= date('now', 'start of month')
+      `);
+      const thisMonthSessions = thisMonthStmt.all(`%${userId}%`) as any[];
+
+      // 支払額を計算
+      const calculateUserAmount = (sessions: any[]): number => {
+        return sessions.reduce((total, row) => {
+          const session = JSON.parse(row.data) as Session;
+          const userPayments = session.payments.filter(
+            p => !p.isDeleted && p.paidBy.userId === userId
+          );
+          return total + userPayments.reduce((sum, p) => sum + p.amount, 0);
+        }, 0);
+      };
+
+      return {
+        totalSessions: allSessions.length,
+        totalAmount: calculateUserAmount(allSessions),
+        thisMonthSessions: thisMonthSessions.length,
+        thisMonthAmount: calculateUserAmount(thisMonthSessions),
+      };
+    } catch (error) {
+      console.error('❌ ユーザー統計取得エラー:', userId, error);
+      return {
+        totalSessions: 0,
+        totalAmount: 0,
+        thisMonthSessions: 0,
+        thisMonthAmount: 0,
+      };
+    }
+  }
 }
 
 // シングルトンインスタンス

@@ -63,4 +63,46 @@ export class CommandParser {
     const normalized = text.trim().toLowerCase();
     return normalized === '終了' || normalized === 'しゅうりょう' || normalized === 'おわり' || normalized === 'end';
   }
+
+  // 履歴コマンド
+  static isHistoryCommand(text: string): boolean {
+    const normalized = text.trim().toLowerCase();
+    return normalized.startsWith('履歴') || normalized.startsWith('りれき') || normalized.startsWith('history');
+  }
+
+  // 履歴コマンドをパース
+  static parseHistoryCommand(text: string): { limit?: number; months?: number } | null {
+    const normalized = text.trim();
+
+    // 「履歴」だけの場合
+    if (/^(履歴|りれき|history)$/i.test(normalized)) {
+      return { limit: 10 }; // デフォルト10件
+    }
+
+    // 「履歴 20」のような件数指定
+    const limitMatch = normalized.match(/^(履歴|りれき|history)[\s　]+(\d+)$/i);
+    if (limitMatch) {
+      const limit = parseInt(limitMatch[2], 10);
+      if (limit > 0 && limit <= 100) {
+        return { limit };
+      }
+    }
+
+    // 「履歴 1月」「履歴 3ヶ月」のような期間指定
+    const monthsMatch = normalized.match(/^(履歴|りれき|history)[\s　]+(\d+)(月|ヶ月|ヵ月|か月|カ月)$/i);
+    if (monthsMatch) {
+      const months = parseInt(monthsMatch[2], 10);
+      if (months > 0 && months <= 12) {
+        return { months };
+      }
+    }
+
+    return null;
+  }
+
+  // 統計コマンド
+  static isStatsCommand(text: string): boolean {
+    const normalized = text.trim().toLowerCase();
+    return normalized === '統計' || normalized === 'とうけい' || normalized === 'stats';
+  }
 }
