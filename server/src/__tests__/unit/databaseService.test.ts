@@ -409,48 +409,50 @@ describe('DatabaseService', () => {
       dbService.batchSaveSessions(sessions);
     });
 
-    test('正常: ユーザーの統計を取得', () => {
+    test('正常: ユーザーの統計を取得（割り勘負担額）', () => {
       const stats = dbService.getUserStats('U123');
 
       expect(stats.totalSessions).toBe(3); // 全3セッション
-      expect(stats.totalAmount).toBe(15000); // 5000 + 2000 + 8000（削除済みは除外）
+      // group-001: 8000/2=4000, group-002: 2000/1=2000, group-003: 8000/1=8000
+      expect(stats.totalShare).toBe(14000);
     });
 
     test('削除済みの支払いは集計しない', () => {
       const stats = dbService.getUserStats('U123');
 
-      // pay005(1500円)は削除済みなので含まれない
-      expect(stats.totalAmount).toBe(15000); // 15000 + 1500 ではない
+      // pay005(1500円)は削除済みなので、group-003は8000/1=8000円
+      expect(stats.totalShare).toBe(14000); // 14000 + 1500 ではない
     });
 
-    test('他のユーザーの支払いは集計しない', () => {
+    test('割り勘計算：他のユーザーの支払いも含めて計算', () => {
       const stats = dbService.getUserStats('U123');
 
-      // U456の支払い(3000円)は含まれない
-      expect(stats.totalAmount).toBe(15000);
+      // group-001: U123が5000円、U456が3000円払った
+      // 割り勘なので U123の負担は (5000+3000)/2 = 4000円
+      expect(stats.totalShare).toBe(14000);
     });
 
     test('異常: 無効なuserId（空文字）', () => {
       const stats = dbService.getUserStats('');
 
       expect(stats.totalSessions).toBe(0);
-      expect(stats.totalAmount).toBe(0);
+      expect(stats.totalShare).toBe(0);
     });
 
     test('異常: 無効なuserId（null）', () => {
       const stats = dbService.getUserStats(null as any);
 
       expect(stats.totalSessions).toBe(0);
-      expect(stats.totalAmount).toBe(0);
+      expect(stats.totalShare).toBe(0);
     });
 
     test('存在しないuserIdは0を返す', () => {
       const stats = dbService.getUserStats('U99999');
 
       expect(stats.totalSessions).toBe(0);
-      expect(stats.totalAmount).toBe(0);
+      expect(stats.totalShare).toBe(0);
       expect(stats.thisMonthSessions).toBe(0);
-      expect(stats.thisMonthAmount).toBe(0);
+      expect(stats.thisMonthShare).toBe(0);
     });
 
     test('セキュリティ: userIdの部分一致を防ぐ', () => {

@@ -126,24 +126,24 @@ ${payments || '記録なし'}
   // 統計メッセージ
   static formatStatsMessage(stats: {
     totalSessions: number;
-    totalAmount: number;
+    totalShare: number;
     thisMonthSessions: number;
-    thisMonthAmount: number;
+    thisMonthShare: number;
   }): string {
-    const avgAmount = stats.totalSessions > 0
-      ? Math.round(stats.totalAmount / stats.totalSessions)
+    const avgShare = stats.totalSessions > 0
+      ? Math.round(stats.totalShare / stats.totalSessions)
       : 0;
 
     return `📊 あなたの統計
 
 【全期間】
 ・参加回数: ${stats.totalSessions}回
-・総支払額: ¥${stats.totalAmount.toLocaleString()}
-・平均支払額: ¥${avgAmount.toLocaleString()}/回
+・割り勘総額: ¥${stats.totalShare.toLocaleString()}
+・平均: ¥${avgShare.toLocaleString()}/回
 
 【今月】
 ・参加回数: ${stats.thisMonthSessions}回
-・支払額: ¥${stats.thisMonthAmount.toLocaleString()}
+・割り勘額: ¥${stats.thisMonthShare.toLocaleString()}
 
 💡「履歴」で過去の清算を確認`;
   }

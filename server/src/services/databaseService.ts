@@ -299,9 +299,9 @@ export class DatabaseService {
    */
   getUserStats(userId: string): {
     totalSessions: number;
-    totalAmount: number;
+    totalShare: number;
     thisMonthSessions: number;
-    thisMonthAmount: number;
+    thisMonthShare: number;
   } {
     try {
       // 入力検証
@@ -309,9 +309,9 @@ export class DatabaseService {
         console.error('❌ 無効なuserId:', userId);
         return {
           totalSessions: 0,
-          totalAmount: 0,
+          totalShare: 0,
           thisMonthSessions: 0,
-          thisMonthAmount: 0,
+          thisMonthShare: 0,
         };
       }
 
@@ -334,38 +334,48 @@ export class DatabaseService {
       `);
       const thisMonthSessions = thisMonthStmt.all(userId) as any[];
 
-      // 支払額を計算（最適化: 一度だけJSONパース）
-      const calculateUserAmount = (sessions: any[]): number => {
-        let total = 0;
+      // 割り勘負担額を計算（自分の実質負担額）
+      const calculateUserShare = (sessions: any[]): number => {
+        let totalShare = 0;
+
         for (const row of sessions) {
           try {
             const session = JSON.parse(row.data) as Session;
-            for (const payment of session.payments) {
-              if (!payment.isDeleted && payment.paidBy.userId === userId) {
-                total += payment.amount;
-              }
+
+            // 削除されていない支払いの合計
+            const totalAmount = session.payments
+              .filter(p => !p.isDeleted)
+              .reduce((sum, p) => sum + p.amount, 0);
+
+            // 参加人数
+            const memberCount = session.members.length;
+
+            // 1人あたりの負担額（割り勘額）
+            if (memberCount > 0) {
+              totalShare += Math.floor(totalAmount / memberCount);
             }
           } catch (parseError) {
             console.error('❌ JSON解析エラー:', parseError);
             // スキップして続行
           }
         }
-        return total;
+
+        return totalShare;
       };
 
       return {
         totalSessions: allSessions.length,
-        totalAmount: calculateUserAmount(allSessions),
+        totalShare: calculateUserShare(allSessions),
         thisMonthSessions: thisMonthSessions.length,
-        thisMonthAmount: calculateUserAmount(thisMonthSessions),
+        thisMonthShare: calculateUserShare(thisMonthSessions),
       };
     } catch (error) {
       console.error('❌ ユーザー統計取得エラー:', userId, error);
       return {
         totalSessions: 0,
-        totalAmount: 0,
+        totalShare: 0,
         thisMonthSessions: 0,
-        thisMonthAmount: 0,
+        thisMonthShare: 0,
       };
     }
   }
