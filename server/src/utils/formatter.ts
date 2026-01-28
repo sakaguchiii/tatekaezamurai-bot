@@ -80,29 +80,39 @@ ${payments || '記録なし'}
       return '💳 清算履歴がありません';
     }
 
-    const limit = options?.limit || 10;
+    const limit = options?.limit || 3;
     const monthsText = options?.months ? `${options.months}ヶ月分` : '';
 
-    // 各セッションを簡潔に表示
+    // 各セッションを「送金指示」中心に表示
     const historyList = sessions.map((session) => {
       // 日付フォーマット (YYYY/MM/DD)
       const date = new Date(session.createdAt);
       const dateStr = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
 
-      // 合計金額
-      const totalAmount = session.payments
-        .filter((p) => !p.isDeleted)
-        .reduce((sum, p) => sum + p.amount, 0);
-
-      // ユーザーの支払額
-      const userAmount = session.payments
-        .filter((p) => !p.isDeleted && p.paidBy.userId === userId)
-        .reduce((sum, p) => sum + p.amount, 0);
-
       const groupName = session.groupName || 'グループ';
-      const memberCount = session.members.length;
 
-      return `${dateStr} ${groupName} (${memberCount}名)\n合計¥${totalAmount.toLocaleString()} / あなた¥${userAmount.toLocaleString()}`;
+      // 自分に関連する送金指示を抽出
+      const mySettlements = session.settlements.filter(
+        (s) => s.from.userId === userId || s.to.userId === userId
+      );
+
+      let settlementText = '';
+      if (mySettlements.length === 0) {
+        // 送金指示がない場合（支払い済みまたは立替なし）
+        settlementText = '✅ 精算済み';
+      } else {
+        settlementText = mySettlements.map((s) => {
+          if (s.from.userId === userId) {
+            // 自分が送る側
+            return `→ ${s.to.displayName}へ ¥${s.amount.toLocaleString()}`;
+          } else {
+            // 自分が受け取る側
+            return `← ${s.from.displayName}から ¥${s.amount.toLocaleString()}`;
+          }
+        }).join('\n');
+      }
+
+      return `${dateStr} ${groupName}\n${settlementText}`;
     }).join('\n\n');
 
     const header = `💳 あなたの清算履歴${monthsText ? ` (${monthsText})` : ''} (最新${sessions.length}件)`;

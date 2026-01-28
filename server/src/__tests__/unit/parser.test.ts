@@ -40,19 +40,19 @@ describe('CommandParser', () => {
 
   describe('履歴コマンド解析（parseHistoryCommand）', () => {
     describe('正常系', () => {
-      test('「履歴」のみ -> デフォルト10件', () => {
+      test('「履歴」のみ -> デフォルト3件', () => {
         const result = CommandParser.parseHistoryCommand('履歴');
-        expect(result).toEqual({ limit: 10 });
+        expect(result).toEqual({ limit: 3 });
       });
 
-      test('「りれき」のみ -> デフォルト10件', () => {
+      test('「りれき」のみ -> デフォルト3件', () => {
         const result = CommandParser.parseHistoryCommand('りれき');
-        expect(result).toEqual({ limit: 10 });
+        expect(result).toEqual({ limit: 3 });
       });
 
-      test('「history」のみ -> デフォルト10件', () => {
+      test('「history」のみ -> デフォルト3件', () => {
         const result = CommandParser.parseHistoryCommand('history');
-        expect(result).toEqual({ limit: 10 });
+        expect(result).toEqual({ limit: 3 });
       });
 
       test('「履歴 1」-> 1件', () => {

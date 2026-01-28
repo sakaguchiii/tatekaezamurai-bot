@@ -81,7 +81,7 @@ export class CommandParser {
 
     // 「履歴」だけの場合
     if (/^(履歴|りれき|history)$/i.test(normalized)) {
-      return { limit: 10 }; // デフォルト10件
+      return { limit: 3 }; // デフォルト3件
     }
 
     // 「履歴 20」のような件数指定

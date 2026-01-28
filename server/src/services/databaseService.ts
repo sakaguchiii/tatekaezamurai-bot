@@ -253,7 +253,7 @@ export class DatabaseService {
       }
 
       // limit検証（1-100の範囲）
-      const limit = options?.limit !== undefined ? options.limit : 10;
+      const limit = options?.limit !== undefined ? options.limit : 3;
       if (limit < 1 || limit > 100 || !Number.isInteger(limit)) {
         console.error('❌ 無効なlimit:', limit);
         return [];
