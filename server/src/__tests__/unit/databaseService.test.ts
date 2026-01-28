@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DatabaseService } from '../../services/databaseService';
 import { Session } from '../../types';
-import { createMockSession, createMockPayment } from '../helpers/mockData';
+import { createMockSession, createMockPayment, createMockMember } from '../helpers/mockData';
 
 describe('DatabaseService', () => {
   let dbService: DatabaseService;
@@ -28,16 +28,31 @@ describe('DatabaseService', () => {
   });
 
   beforeEach(() => {
+    // 既存のDBサービスをクローズ
+    if (dbService) {
+      try {
+        dbService.close();
+      } catch (e) {
+        // 無視
+      }
+    }
+
+    // 実際のデータベースファイルパス
+    const actualDbPath = path.join(__dirname, '../../data/database.db');
+
     // 各テストの前にDBをクリーンアップ
-    if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath);
+    if (fs.existsSync(actualDbPath)) {
+      fs.unlinkSync(actualDbPath);
     }
-    if (fs.existsSync(`${testDbPath}-wal`)) {
-      fs.unlinkSync(`${testDbPath}-wal`);
+    if (fs.existsSync(`${actualDbPath}-wal`)) {
+      fs.unlinkSync(`${actualDbPath}-wal`);
     }
-    if (fs.existsSync(`${testDbPath}-shm`)) {
-      fs.unlinkSync(`${testDbPath}-shm`);
+    if (fs.existsSync(`${actualDbPath}-shm`)) {
+      fs.unlinkSync(`${actualDbPath}-shm`);
     }
+
+    // テスト用DBサービスを初期化
+    dbService = new DatabaseService();
   });
 
   afterAll(() => {
@@ -220,6 +235,231 @@ describe('DatabaseService', () => {
           metadata: { circular: {} }
         });
       }).not.toThrow();
+    });
+  });
+
+  describe('ユーザーセッション取得（getUserSessions）', () => {
+    beforeEach(() => {
+      // テスト用セッションを準備
+      const sessions: Session[] = [
+        createMockSession('group-001', {
+          status: 'completed',
+          members: [
+            createMockMember('U123', 'ユーザーA'),
+            createMockMember('U456', 'ユーザーB')
+          ],
+          payments: [
+            createMockPayment('pay001', 1, 'U123', 'ユーザーA', '一軒目', 5000, ['U123', 'U456'])
+          ],
+          createdAt: new Date('2026-01-20').toISOString()
+        }),
+        createMockSession('group-002', {
+          status: 'completed',
+          members: [
+            createMockMember('U123', 'ユーザーA'),
+            createMockMember('U789', 'ユーザーC')
+          ],
+          payments: [
+            createMockPayment('pay002', 1, 'U123', 'ユーザーA', '二軒目', 3000, ['U123', 'U789'])
+          ],
+          createdAt: new Date('2026-01-15').toISOString()
+        }),
+        createMockSession('group-003', {
+          status: 'completed',
+          members: [
+            createMockMember('U1234567', 'ユーザーD'), // U123を含むが別人
+          ],
+          payments: [],
+          createdAt: new Date('2026-01-10').toISOString()
+        }),
+        createMockSession('group-004', {
+          status: 'active', // activeは含まれない
+          members: [
+            createMockMember('U123', 'ユーザーA'),
+          ],
+          payments: [],
+          createdAt: new Date('2026-01-25').toISOString()
+        })
+      ];
+
+      dbService.batchSaveSessions(sessions);
+    });
+
+    test('正常: ユーザーIDで正確にセッションを取得', () => {
+      const sessions = dbService.getUserSessions('U123');
+
+      // U123が参加した2件のみ（U1234567は除外）
+      expect(sessions.length).toBe(2);
+      expect(sessions[0].groupId).toBe('group-001'); // 新しい順
+      expect(sessions[1].groupId).toBe('group-002');
+    });
+
+    test('正常: デフォルトで10件取得', () => {
+      const sessions = dbService.getUserSessions('U123');
+      expect(sessions.length).toBeLessThanOrEqual(10);
+    });
+
+    test('正常: limit指定で件数制限', () => {
+      const sessions = dbService.getUserSessions('U123', { limit: 1 });
+      expect(sessions.length).toBe(1);
+      expect(sessions[0].groupId).toBe('group-001'); // 最新のみ
+    });
+
+    test('異常: 無効なuserId（空文字）', () => {
+      const sessions = dbService.getUserSessions('');
+      expect(sessions).toEqual([]);
+    });
+
+    test('異常: 無効なuserId（null）', () => {
+      const sessions = dbService.getUserSessions(null as any);
+      expect(sessions).toEqual([]);
+    });
+
+    test('異常: 無効なlimit（0）', () => {
+      const sessions = dbService.getUserSessions('U123', { limit: 0 });
+      expect(sessions).toEqual([]);
+    });
+
+    test('異常: 無効なlimit（101）', () => {
+      const sessions = dbService.getUserSessions('U123', { limit: 101 });
+      expect(sessions).toEqual([]);
+    });
+
+    test('異常: 無効なlimit（小数）', () => {
+      const sessions = dbService.getUserSessions('U123', { limit: 1.5 });
+      expect(sessions).toEqual([]);
+    });
+
+    test('異常: 無効なmonths（0）', () => {
+      const sessions = dbService.getUserSessions('U123', { months: 0 });
+      expect(sessions).toEqual([]);
+    });
+
+    test('異常: 無効なmonths（13）', () => {
+      const sessions = dbService.getUserSessions('U123', { months: 13 });
+      expect(sessions).toEqual([]);
+    });
+
+    test('セキュリティ: userIdの部分一致を防ぐ', () => {
+      // U123 と U1234567 は別人として扱われるべき
+      const sessionsU123 = dbService.getUserSessions('U123');
+      const sessionsU1234567 = dbService.getUserSessions('U1234567');
+
+      expect(sessionsU123.length).toBe(2);
+      expect(sessionsU1234567.length).toBe(1);
+      expect(sessionsU1234567[0].groupId).toBe('group-003');
+    });
+
+    test('activeセッションは含まれない', () => {
+      const sessions = dbService.getUserSessions('U123');
+
+      // group-004はactiveなので含まれない
+      const hasActiveSession = sessions.some(s => s.groupId === 'group-004');
+      expect(hasActiveSession).toBe(false);
+    });
+
+    test('存在しないuserIdは空配列を返す', () => {
+      const sessions = dbService.getUserSessions('U99999');
+      expect(sessions).toEqual([]);
+    });
+  });
+
+  describe('ユーザー統計取得（getUserStats）', () => {
+    beforeEach(() => {
+      // テスト用セッションを準備
+      const sessions: Session[] = [
+        createMockSession('group-001', {
+          status: 'completed',
+          members: [
+            createMockMember('U123', 'ユーザーA'),
+            createMockMember('U456', 'ユーザーB')
+          ],
+          payments: [
+            createMockPayment('pay001', 1, 'U123', 'ユーザーA', '一軒目', 5000, ['U123', 'U456']),
+            createMockPayment('pay002', 2, 'U456', 'ユーザーB', '二軒目', 3000, ['U123', 'U456'])
+          ],
+          createdAt: new Date('2026-01-20').toISOString()
+        }),
+        createMockSession('group-002', {
+          status: 'completed',
+          members: [
+            createMockMember('U123', 'ユーザーA')
+          ],
+          payments: [
+            createMockPayment('pay003', 1, 'U123', 'ユーザーA', 'ランチ', 2000, ['U123'])
+          ],
+          createdAt: new Date('2025-12-15').toISOString() // 先月
+        }),
+        createMockSession('group-003', {
+          status: 'completed',
+          members: [
+            createMockMember('U123', 'ユーザーA')
+          ],
+          payments: [
+            createMockPayment('pay004', 1, 'U123', 'ユーザーA', 'ディナー', 8000, ['U123']),
+            createMockPayment('pay005', 2, 'U123', 'ユーザーA', 'タクシー', 1500, ['U123'])
+          ],
+          createdAt: new Date('2026-01-10').toISOString()
+        })
+      ];
+
+      // 削除済みフラグを手動で設定
+      sessions[2].payments[1].isDeleted = true;
+
+      dbService.batchSaveSessions(sessions);
+    });
+
+    test('正常: ユーザーの統計を取得', () => {
+      const stats = dbService.getUserStats('U123');
+
+      expect(stats.totalSessions).toBe(3); // 全3セッション
+      expect(stats.totalAmount).toBe(15000); // 5000 + 2000 + 8000（削除済みは除外）
+    });
+
+    test('削除済みの支払いは集計しない', () => {
+      const stats = dbService.getUserStats('U123');
+
+      // pay005(1500円)は削除済みなので含まれない
+      expect(stats.totalAmount).toBe(15000); // 15000 + 1500 ではない
+    });
+
+    test('他のユーザーの支払いは集計しない', () => {
+      const stats = dbService.getUserStats('U123');
+
+      // U456の支払い(3000円)は含まれない
+      expect(stats.totalAmount).toBe(15000);
+    });
+
+    test('異常: 無効なuserId（空文字）', () => {
+      const stats = dbService.getUserStats('');
+
+      expect(stats.totalSessions).toBe(0);
+      expect(stats.totalAmount).toBe(0);
+    });
+
+    test('異常: 無効なuserId（null）', () => {
+      const stats = dbService.getUserStats(null as any);
+
+      expect(stats.totalSessions).toBe(0);
+      expect(stats.totalAmount).toBe(0);
+    });
+
+    test('存在しないuserIdは0を返す', () => {
+      const stats = dbService.getUserStats('U99999');
+
+      expect(stats.totalSessions).toBe(0);
+      expect(stats.totalAmount).toBe(0);
+      expect(stats.thisMonthSessions).toBe(0);
+      expect(stats.thisMonthAmount).toBe(0);
+    });
+
+    test('セキュリティ: userIdの部分一致を防ぐ', () => {
+      // U123とU1234567が混同されないこと
+      const statsU123 = dbService.getUserStats('U123');
+      const statsU1234567 = dbService.getUserStats('U1234567');
+
+      expect(statsU123.totalSessions).toBeGreaterThan(0);
+      expect(statsU1234567.totalSessions).toBe(0);
     });
   });
 });

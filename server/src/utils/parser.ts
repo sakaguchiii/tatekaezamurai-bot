@@ -74,6 +74,11 @@ export class CommandParser {
   static parseHistoryCommand(text: string): { limit?: number; months?: number } | null {
     const normalized = text.trim();
 
+    // 入力検証
+    if (!normalized || normalized.length > 50) {
+      return null;
+    }
+
     // 「履歴」だけの場合
     if (/^(履歴|りれき|history)$/i.test(normalized)) {
       return { limit: 10 }; // デフォルト10件
@@ -83,18 +88,22 @@ export class CommandParser {
     const limitMatch = normalized.match(/^(履歴|りれき|history)[\s　]+(\d+)$/i);
     if (limitMatch) {
       const limit = parseInt(limitMatch[2], 10);
-      if (limit > 0 && limit <= 100) {
+      // 厳格な検証: 1-100の範囲、整数のみ
+      if (Number.isInteger(limit) && limit >= 1 && limit <= 100) {
         return { limit };
       }
+      return null; // 範囲外の場合はnullを返す
     }
 
     // 「履歴 1月」「履歴 3ヶ月」のような期間指定
     const monthsMatch = normalized.match(/^(履歴|りれき|history)[\s　]+(\d+)(月|ヶ月|ヵ月|か月|カ月)$/i);
     if (monthsMatch) {
       const months = parseInt(monthsMatch[2], 10);
-      if (months > 0 && months <= 12) {
+      // 厳格な検証: 1-12の範囲、整数のみ
+      if (Number.isInteger(months) && months >= 1 && months <= 12) {
         return { months };
       }
+      return null; // 範囲外の場合はnullを返す
     }
 
     return null;

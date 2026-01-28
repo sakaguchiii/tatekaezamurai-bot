@@ -246,24 +246,46 @@ export class DatabaseService {
    */
   getUserSessions(userId: string, options?: { limit?: number; months?: number }): Session[] {
     try {
-      const limit = options?.limit || 10;
-      const months = options?.months;
-
-      let sql = `
-        SELECT data FROM sessions
-        WHERE status = 'completed'
-        AND json_extract(data, '$.members') LIKE ?
-      `;
-
-      // 期間フィルター
-      if (months) {
-        sql += ` AND created_at >= date('now', '-${months} months')`;
+      // 入力検証
+      if (!userId || typeof userId !== 'string') {
+        console.error('❌ 無効なuserId:', userId);
+        return [];
       }
 
-      sql += ` ORDER BY created_at DESC LIMIT ?`;
+      // limit検証（1-100の範囲）
+      const limit = options?.limit !== undefined ? options.limit : 10;
+      if (limit < 1 || limit > 100 || !Number.isInteger(limit)) {
+        console.error('❌ 無効なlimit:', limit);
+        return [];
+      }
+
+      // months検証（1-12の範囲）
+      const months = options?.months;
+      if (months !== undefined) {
+        if (months < 1 || months > 12 || !Number.isInteger(months)) {
+          console.error('❌ 無効なmonths:', months);
+          return [];
+        }
+      }
+
+      // JSON検索を正確に行うため、json_each()を使用
+      // members配列を展開し、userId完全一致で検索
+      let sql = `
+        SELECT DISTINCT s.data
+        FROM sessions s, json_each(s.data, '$.members') AS member
+        WHERE s.status = 'completed'
+        AND json_extract(member.value, '$.userId') = ?
+      `;
+
+      // 期間フィルター（日本時間対応: UTC+9）
+      if (months !== undefined) {
+        sql += ` AND s.created_at >= datetime('now', '-${months} months', '+9 hours')`;
+      }
+
+      sql += ` ORDER BY s.created_at DESC LIMIT ?`;
 
       const stmt = this.db.prepare(sql);
-      const rows = stmt.all(`%${userId}%`, limit) as any[];
+      const rows = stmt.all(userId, limit) as any[];
 
       return rows.map(row => JSON.parse(row.data) as Session);
     } catch (error) {
@@ -282,32 +304,53 @@ export class DatabaseService {
     thisMonthAmount: number;
   } {
     try {
-      // 全期間の統計
+      // 入力検証
+      if (!userId || typeof userId !== 'string') {
+        console.error('❌ 無効なuserId:', userId);
+        return {
+          totalSessions: 0,
+          totalAmount: 0,
+          thisMonthSessions: 0,
+          thisMonthAmount: 0,
+        };
+      }
+
+      // 全期間の統計（正確なJSON検索）
       const allSessionsStmt = this.db.prepare(`
-        SELECT data FROM sessions
-        WHERE status = 'completed'
-        AND json_extract(data, '$.members') LIKE ?
+        SELECT DISTINCT s.data
+        FROM sessions s, json_each(s.data, '$.members') AS member
+        WHERE s.status = 'completed'
+        AND json_extract(member.value, '$.userId') = ?
       `);
-      const allSessions = allSessionsStmt.all(`%${userId}%`) as any[];
+      const allSessions = allSessionsStmt.all(userId) as any[];
 
-      // 今月の統計
+      // 今月の統計（日本時間対応: UTC+9）
       const thisMonthStmt = this.db.prepare(`
-        SELECT data FROM sessions
-        WHERE status = 'completed'
-        AND json_extract(data, '$.members') LIKE ?
-        AND created_at >= date('now', 'start of month')
+        SELECT DISTINCT s.data
+        FROM sessions s, json_each(s.data, '$.members') AS member
+        WHERE s.status = 'completed'
+        AND json_extract(member.value, '$.userId') = ?
+        AND s.created_at >= datetime('now', 'start of month', '+9 hours')
       `);
-      const thisMonthSessions = thisMonthStmt.all(`%${userId}%`) as any[];
+      const thisMonthSessions = thisMonthStmt.all(userId) as any[];
 
-      // 支払額を計算
+      // 支払額を計算（最適化: 一度だけJSONパース）
       const calculateUserAmount = (sessions: any[]): number => {
-        return sessions.reduce((total, row) => {
-          const session = JSON.parse(row.data) as Session;
-          const userPayments = session.payments.filter(
-            p => !p.isDeleted && p.paidBy.userId === userId
-          );
-          return total + userPayments.reduce((sum, p) => sum + p.amount, 0);
-        }, 0);
+        let total = 0;
+        for (const row of sessions) {
+          try {
+            const session = JSON.parse(row.data) as Session;
+            for (const payment of session.payments) {
+              if (!payment.isDeleted && payment.paidBy.userId === userId) {
+                total += payment.amount;
+              }
+            }
+          } catch (parseError) {
+            console.error('❌ JSON解析エラー:', parseError);
+            // スキップして続行
+          }
+        }
+        return total;
       };
 
       return {
