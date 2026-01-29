@@ -191,6 +191,9 @@ describe('StorageService', () => {
       await expect(
         storageService.createSession(mockSession)
       ).rejects.toThrow();
+
+      // モックをリセット
+      (cacheService.createSession as jest.Mock).mockReset();
     });
 
     test('セッション更新エラー時は例外を投げる', async () => {
@@ -201,6 +204,9 @@ describe('StorageService', () => {
       await expect(
         storageService.updateSession('test-group', {})
       ).rejects.toThrow();
+
+      // モックをリセット
+      (cacheService.updateSession as jest.Mock).mockReset();
     });
   });
 

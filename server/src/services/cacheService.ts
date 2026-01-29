@@ -88,7 +88,13 @@ export class CacheService {
     });
 
     // 即座にDBに保存（新規作成は重要なので同期的に）
-    databaseService.saveSession(session);
+    try {
+      databaseService.saveSession(session);
+    } catch (error) {
+      console.error('❌ セッション作成時のDB保存エラー:', session.groupId, error);
+      // キャッシュには存在するのでセッションは続行可能
+      // エラーをログに記録するが、アプリはクラッシュさせない
+    }
   }
 
   /**
@@ -102,11 +108,19 @@ export class CacheService {
       session.updatedAt = new Date().toISOString();
 
       // 即座にDBに保存
-      databaseService.saveSession(session);
+      try {
+        databaseService.saveSession(session);
+        console.log(`✅ セッション終了（DB保存成功）: ${groupId}`);
+      } catch (error) {
+        console.error('❌ セッション終了時のDB保存エラー:', groupId, error);
+        // DB保存に失敗してもキャッシュには残っているので、
+        // 次回のフラッシュで再試行される可能性がある
+        // キャッシュを保持して再試行の機会を与える
+        return;
+      }
 
       // キャッシュから削除（完了したセッションは不要）
       this.cache.delete(groupId);
-      console.log(`✅ セッション終了: ${groupId}`);
     }
   }
 
