@@ -294,9 +294,9 @@ describe('DatabaseService', () => {
       expect(sessions[1].groupId).toBe('group-002');
     });
 
-    test('正常: デフォルトで3件取得', () => {
+    test('正常: デフォルトで5件取得', () => {
       const sessions = dbService.getUserSessions('U123');
-      expect(sessions.length).toBeLessThanOrEqual(3);
+      expect(sessions.length).toBeLessThanOrEqual(5);
     });
 
     test('正常: limit指定で件数制限', () => {

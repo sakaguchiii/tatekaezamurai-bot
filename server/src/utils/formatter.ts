@@ -80,7 +80,7 @@ ${payments || '記録なし'}
       return '💳 清算履歴がありません';
     }
 
-    const limit = options?.limit || 3;
+    const limit = options?.limit || 5;
     const monthsText = options?.months ? `${options.months}ヶ月分` : '';
 
     // 各セッションを「送金指示」中心に表示
@@ -98,8 +98,8 @@ ${payments || '記録なし'}
 
       let settlementText = '';
       if (mySettlements.length === 0) {
-        // 送金指示がない場合（支払い済みまたは立替なし）
-        settlementText = '✅ 精算済み';
+        // 送金指示がない場合（立替なし）
+        settlementText = '💵 送金なし';
       } else {
         settlementText = mySettlements.map((s) => {
           if (s.from.userId === userId) {
