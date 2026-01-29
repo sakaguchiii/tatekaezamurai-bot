@@ -7,10 +7,13 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { DatabaseService } from '../src/services/databaseService';
+import Database from 'better-sqlite3';
 import { Session } from '../src/types';
 
-const BACKUP_DIR = path.join(__dirname, '../dist/data/backups');
+// プロジェクトルートから絶対パスで指定
+const PROJECT_ROOT = path.join(__dirname, '..');
+const BACKUP_DIR = path.join(PROJECT_ROOT, 'dist/data/backups');
+const DB_PATH = path.join(PROJECT_ROOT, 'dist/data/database.db');
 
 function restoreFromBackup(date: string) {
   const backupFile = path.join(BACKUP_DIR, `sessions_${date}.json`);
@@ -43,18 +46,49 @@ function restoreFromBackup(date: string) {
   });
 
   // データベースに保存
-  console.log('\n💾 データベースに保存中...');
-  const dbService = new DatabaseService();
+  console.log(`\n💾 データベースに保存中: ${DB_PATH}`);
+
+  if (!fs.existsSync(DB_PATH)) {
+    console.error(`❌ データベースファイルが見つかりません: ${DB_PATH}`);
+    console.error('先に npm run build を実行してください');
+    process.exit(1);
+  }
+
+  const db = new Database(DB_PATH);
 
   try {
-    dbService.batchSaveSessions(sessions);
+    // プリペアドステートメント
+    const upsertStmt = db.prepare(`
+      INSERT INTO sessions (id, group_id, status, created_at, updated_at, data)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        status = excluded.status,
+        updated_at = excluded.updated_at,
+        data = excluded.data
+    `);
+
+    // トランザクションで一括保存
+    const insertMany = db.transaction((sessions: Session[]) => {
+      for (const session of sessions) {
+        upsertStmt.run(
+          session.groupId,
+          session.groupId,
+          session.status,
+          session.createdAt,
+          new Date().toISOString(),
+          JSON.stringify(session)
+        );
+      }
+    });
+
+    insertMany(sessions);
     console.log(`✅ ${sessions.length}件のセッションを復元しました`);
 
-    // 確認のため取得してみる
+    // 確認のため直接SQLで取得してみる（completedステータスも含む）
     console.log('\n🔍 復元確認:');
     sessions.forEach(session => {
-      const retrieved = dbService.getSession(session.groupId);
-      if (retrieved) {
+      const row = db.prepare('SELECT id FROM sessions WHERE id = ?').get(session.groupId);
+      if (row) {
         console.log(`  ✅ ${session.groupName || session.groupId} - 復元成功`);
       } else {
         console.log(`  ❌ ${session.groupName || session.groupId} - 復元失敗`);
@@ -64,7 +98,7 @@ function restoreFromBackup(date: string) {
     console.error('❌ 復元エラー:', error);
     process.exit(1);
   } finally {
-    dbService.close();
+    db.close();
   }
 
   console.log('\n✨ 復元完了！');
