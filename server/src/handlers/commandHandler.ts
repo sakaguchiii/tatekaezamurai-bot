@@ -381,11 +381,11 @@ export class CommandHandler {
 
   // ヘルプ表示
   private async handleHelp(replyToken: string): Promise<void> {
-    const message = MessageFormatter.formatHelpMessage();
+    const messages = MessageFormatter.formatHelpMessage();
 
     await client.replyMessage({
       replyToken,
-      messages: [{ type: 'text', text: message }],
+      messages: messages.map(text => ({ type: 'text', text })),
     });
   }
 
